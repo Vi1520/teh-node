@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Контакты - Техникум</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="/">Главная</a></li>
+            <li><a href="/about">О техникуме</a></li>
+            <li><a href="/contacts" class="active">Контакты</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="content">
+            <h1>Контактная информация</h1>
+            
+            <!-- ГАЛЕРЕЯ ФОТОГРАФИЙ -->
+            <h2>🏫 Фотографии техникума</h2>
+            <div class="contact-gallery" id="contact-gallery">
+                <p style="text-align: center; color: #666;">Загрузка фотографий...</p>
+            </div>
+            
+            <div class="info-block">
+                <h2>🏢 Адрес</h2>
+                <div class="contact-info">
+                    <i>📍</i> г. Москва, ул. Образования, д. 15
+                </div>
+                <div class="contact-info">
+                    <i>🚇</i> м. Университет, выход №3
+                </div>
+            </div>
+            
+            <div class="info-block">
+                <h2>📞 Телефоны</h2>
+                <div class="contact-info">
+                    <i>📱</i> Приемная комиссия: +7 (495) 123-45-67
+                </div>
+                <div class="contact-info">
+                    <i>📞</i> Учебная часть: +7 (495) 123-45-68
+                </div>
+            </div>
+            
+            <div class="info-block">
+                <h2>✉️ Email</h2>
+                <div class="contact-info">
+                    <i>📧</i> info@technicum.ru
+                </div>
+                <div class="contact-info">
+                    <i>📧</i> priem@technicum.ru
+                </div>
+            </div>
+            
+            <div class="working-hours">
+                <h3>🕒 Часы работы</h3>
+                <p><strong>Приемная комиссия:</strong></p>
+                <p>Пн-Пт: 9:00 - 18:00</p>
+                <p>Сб: 10:00 - 15:00</p>
+                <p>Вс: выходной</p>
+            </div>
+            
+            <div class="info-block">
+                <h2>🌐 Социальные сети</h2>
+                <div class="contact-info">
+                    <i>📘</i> ВКонтакте: vk.com/technicum
+                </div>
+                <div class="contact-info">
+                    <i>📷</i> Instagram: @technicum_official
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2026 Техникум. Все права защищены.</p>
+    </footer>
+
+    <script>
+        // Простая функция загрузки фотографий
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Страница загружена, запрашиваем фото...');
+            
+            fetch('/api/photos/contacts')
+                .then(response => {
+                    console.log('Ответ получен, статус:', response.status);
+                    return response.json();
+                })
+                .then(photos => {
+                    console.log('Получены фото:', photos);
+                    
+                    const gallery = document.getElementById('contact-gallery');
+                    
+                    if (photos && photos.length > 0) {
+                        // Создаем HTML для каждого фото
+                        let html = '';
+                        photos.forEach(photo => {
+                            html += `
+                                <div class="contact-gallery-item">
+                                    <img src="${photo.src}" alt="${photo.alt}" loading="lazy">
+                                </div>
+                            `;
+                        });
+                        gallery.innerHTML = html;
+                        console.log('✅ Фото добавлены на страницу');
+                    } else {
+                        gallery.innerHTML = '<p style="text-align: center; color: #999;">Фотографии не найдены</p>';
+                        console.log('⚠️ Нет фотографий');
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Ошибка загрузки:', error);
+                    document.getElementById('contact-gallery').innerHTML = 
+                        '<p style="text-align: center; color: #999;">Ошибка загрузки фотографий</p>';
+                });
+        });
+    </script>
+</body>
+</html>
