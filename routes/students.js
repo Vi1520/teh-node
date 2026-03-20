@@ -696,55 +696,43 @@ router.get('/view/:id', (req, res) => {
 });
 
 // API для работы со студентами
-router.get('/api/students/:id', async (req, res) => {
-    try {
-        const [results] = await db.query('SELECT * FROM students WHERE id = ?', [req.params.id]);
+router.get('/api/students/:id', (req, res) => {
+    db.query('SELECT * FROM students WHERE id = ?', [req.params.id], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
         if (results.length === 0) return res.status(404).json({ error: 'Не найдено' });
         res.json(results[0]);
-    } catch (err) {
-        console.error('Ошибка БД:', err);
-        res.status(500).json({ error: err.message });
-    }
+    });
 });
 
-router.post('/api/students', auth.isAuthenticated, auth.canModify, async (req, res) => {
+router.post('/api/students', auth.isAuthenticated, auth.canModify, (req, res) => {
     const { full_name, group_name, course, email, phone, enrollment_year, photo } = req.body;
-    
-    try {
-        const [result] = await db.query(
-            'INSERT INTO students (full_name, group_name, course, email, phone, enrollment_year, photo) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [full_name, group_name, course, email, phone, enrollment_year, photo || '/uploads/placeholder.jpg']
-        );
-        res.json({ message: 'Добавлено', id: result.insertId });
-    } catch (err) {
-        console.error('Ошибка БД:', err);
-        res.status(500).json({ error: err.message });
-    }
+    db.query(
+        'INSERT INTO students (full_name, group_name, course, email, phone, enrollment_year, photo) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [full_name, group_name, course, email, phone, enrollment_year, photo || '/uploads/placeholder.jpg'],
+        (err, result) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ message: 'Добавлено', id: result.insertId });
+        }
+    );
 });
 
-router.put('/api/students/:id', auth.isAuthenticated, auth.canModify, async (req, res) => {
+router.put('/api/students/:id', auth.isAuthenticated, auth.canModify, (req, res) => {
     const { full_name, group_name, course, email, phone, enrollment_year, photo } = req.body;
-    
-    try {
-        await db.query(
-            'UPDATE students SET full_name=?, group_name=?, course=?, email=?, phone=?, enrollment_year=?, photo=? WHERE id=?',
-            [full_name, group_name, course, email, phone, enrollment_year, photo || '/uploads/placeholder.jpg', req.params.id]
-        );
-        res.json({ message: 'Обновлено' });
-    } catch (err) {
-        console.error('Ошибка БД:', err);
-        res.status(500).json({ error: err.message });
-    }
+    db.query(
+        'UPDATE students SET full_name=?, group_name=?, course=?, email=?, phone=?, enrollment_year=?, photo=? WHERE id=?',
+        [full_name, group_name, course, email, phone, enrollment_year, photo || '/uploads/placeholder.jpg', req.params.id],
+        (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ message: 'Обновлено' });
+        }
+    );
 });
 
-router.delete('/api/students/:id', auth.isAuthenticated, auth.canModify, async (req, res) => {
-    try {
-        await db.query('DELETE FROM students WHERE id = ?', [req.params.id]);
+router.delete('/api/students/:id', auth.isAuthenticated, auth.canModify, (req, res) => {
+    db.query('DELETE FROM students WHERE id = ?', [req.params.id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
         res.json({ message: 'Удалено' });
-    } catch (err) {
-        console.error('Ошибка БД:', err);
-        res.status(500).json({ error: err.message });
-    }
+    });
 });
 
 module.exports = router;
