@@ -403,35 +403,27 @@ router.post('/api/register', async (req, res) => {
     }
     
     try {
-        db.query('SELECT * FROM users WHERE username = ?', [username], async (err, results) => {
-            if (err) {
-                console.error('Ошибка БД:', err);
-                return res.status(500).json({ error: 'Ошибка сервера' });
-            }
-            
-            if (results.length > 0) {
-                return res.status(400).json({ error: 'Пользователь уже существует' });
-            }
-            
-            const salt = bcrypt.genSaltSync(10);
-            const hashedPassword = bcrypt.hashSync(password, salt);
-            
-            db.query(
-                'INSERT INTO users (username, password, email) VALUES (?, ?, ?)',
-                [username, hashedPassword, email || null],
-                (err, result) => {
-                    if (err) {
-                        console.error('Ошибка создания:', err);
-                        return res.status(500).json({ error: 'Ошибка создания пользователя' });
-                    }
-                    
-                    res.status(201).json({ 
-                        message: 'Регистрация успешна',
-                        userId: result.insertId 
-                    });
-                }
-            );
+        // Проверяем существует ли пользователь
+        const [existingUsers] = await db.query('SELECT * FROM users WHERE username = ?', [username]);
+        
+        if (existingUsers.length > 0) {
+            return res.status(400).json({ error: 'Пользователь уже существует' });
+        }
+        
+        const salt = bcrypt.genSaltSync(10);
+        const hashedPassword = bcrypt.hashSync(password, salt);
+        
+        // Создаем пользователя
+        const [result] = await db.query(
+            'INSERT INTO users (username, password, email) VALUES (?, ?, ?)',
+            [username, hashedPassword, email || null]
+        );
+        
+        res.status(201).json({ 
+            message: 'Регистрация успешна',
+            userId: result.insertId 
         });
+        
     } catch (error) {
         console.error('Ошибка:', error);
         res.status(500).json({ error: 'Ошибка сервера' });
@@ -439,24 +431,21 @@ router.post('/api/register', async (req, res) => {
 });
 
 // API для входа
-router.post('/api/login', (req, res) => {
+router.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
     
     if (!username || !password) {
         return res.status(400).json({ error: 'Логин и пароль обязательны' });
     }
     
-    db.query('SELECT * FROM users WHERE username = ?', [username], (err, results) => {
-        if (err) {
-            console.error('Ошибка БД:', err);
-            return res.status(500).json({ error: 'Ошибка сервера' });
-        }
+    try {
+        const [users] = await db.query('SELECT * FROM users WHERE username = ?', [username]);
         
-        if (results.length === 0) {
+        if (users.length === 0) {
             return res.status(401).json({ error: 'Неверный логин или пароль' });
         }
         
-        const user = results[0];
+        const user = users[0];
         const passwordMatch = bcrypt.compareSync(password, user.password);
         
         if (!passwordMatch) {
@@ -475,7 +464,11 @@ router.post('/api/login', (req, res) => {
                 role: user.role || 'user'
             }
         });
-    });
+        
+    } catch (error) {
+        console.error('Ошибка БД:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
 });
 
 // API для проверки авторизации
@@ -505,5 +498,3 @@ router.get('/logout', (req, res) => {
     req.session.destroy();
     res.redirect('/');
 });
-
-module.exports = router;

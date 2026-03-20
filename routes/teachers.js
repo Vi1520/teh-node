@@ -711,43 +711,55 @@ router.get('/view/:id', (req, res) => {
 });
 
 // API для работы с преподавателями
-router.get('/api/teachers/:id', (req, res) => {
-    db.query('SELECT * FROM teachers WHERE id = ?', [req.params.id], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
+router.get('/api/teachers/:id', async (req, res) => {
+    try {
+        const [results] = await db.query('SELECT * FROM teachers WHERE id = ?', [req.params.id]);
         if (results.length === 0) return res.status(404).json({ error: 'Не найдено' });
         res.json(results[0]);
-    });
+    } catch (err) {
+        console.error('Ошибка БД:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
-router.post('/api/teachers', auth.isAuthenticated, auth.canModify, (req, res) => {
+router.post('/api/teachers', auth.isAuthenticated, auth.canModify, async (req, res) => {
     const { full_name, subject, qualification, experience, email, phone, department, photo } = req.body;
-    db.query(
-        'INSERT INTO teachers (full_name, subject, qualification, experience, email, phone, department, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [full_name, subject, qualification, experience, email, phone, department, photo || '/uploads/placeholder.jpg'],
-        (err, result) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ message: 'Добавлено', id: result.insertId });
-        }
-    );
+    
+    try {
+        const [result] = await db.query(
+            'INSERT INTO teachers (full_name, subject, qualification, experience, email, phone, department, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [full_name, subject, qualification, experience, email, phone, department, photo || '/uploads/placeholder.jpg']
+        );
+        res.json({ message: 'Добавлено', id: result.insertId });
+    } catch (err) {
+        console.error('Ошибка БД:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
-router.put('/api/teachers/:id', auth.isAuthenticated, auth.canModify, (req, res) => {
+router.put('/api/teachers/:id', auth.isAuthenticated, auth.canModify, async (req, res) => {
     const { full_name, subject, qualification, experience, email, phone, department, photo } = req.body;
-    db.query(
-        'UPDATE teachers SET full_name=?, subject=?, qualification=?, experience=?, email=?, phone=?, department=?, photo=? WHERE id=?',
-        [full_name, subject, qualification, experience, email, phone, department, photo || '/uploads/placeholder.jpg', req.params.id],
-        (err) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ message: 'Обновлено' });
-        }
-    );
+    
+    try {
+        await db.query(
+            'UPDATE teachers SET full_name=?, subject=?, qualification=?, experience=?, email=?, phone=?, department=?, photo=? WHERE id=?',
+            [full_name, subject, qualification, experience, email, phone, department, photo || '/uploads/placeholder.jpg', req.params.id]
+        );
+        res.json({ message: 'Обновлено' });
+    } catch (err) {
+        console.error('Ошибка БД:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
-router.delete('/api/teachers/:id', auth.isAuthenticated, auth.canModify, (req, res) => {
-    db.query('DELETE FROM teachers WHERE id = ?', [req.params.id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
+router.delete('/api/teachers/:id', auth.isAuthenticated, auth.canModify, async (req, res) => {
+    try {
+        await db.query('DELETE FROM teachers WHERE id = ?', [req.params.id]);
         res.json({ message: 'Удалено' });
-    });
+    } catch (err) {
+        console.error('Ошибка БД:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 module.exports = router;

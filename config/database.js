@@ -3,24 +3,35 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
-const db = mysql.createConnection({
+// Используем pool вместо одного соединения
+const pool = mysql.createPool({
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'laravel',
     password: process.env.DB_PASSWORD || 'Gj5zxs2o',
-    database: process.env.DB_NAME || 'technicum'
+    database: process.env.DB_NAME || 'technicum',
+    port: process.env.DB_PORT || 3306,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    connectTimeout: 10000 // 10 секунд таймаут
 });
 
-db.connect(err => {
-    if (err) {
-        console.log('\n❌ ОШИБКА ПОДКЛЮЧЕНИЯ К БД:');
-        console.log('Пользователь: laravel');
-        console.log('Пароль: Gj5zxs2o');
-        console.log('База: technicum');
-        console.log('\nОшибка:', err.message);
-    } else {
-        console.log('✅ MySQL подключен (пользователь: laravel)');
+// Экспортируем pool с поддержкой промисов
+const promisePool = pool.promise();
+
+// Проверяем подключение при старте
+promisePool.getConnection()
+    .then(connection => {
+        console.log('✅ MySQL подключен к Railway!');
         console.log('📁 База данных:', process.env.DB_NAME);
-    }
-});
+        connection.release();
+    })
+    .catch(err => {
+        console.log('\n❌ ОШИБКА ПОДКЛЮЧЕНИЯ К БД:');
+        console.log('Хост:', process.env.DB_HOST);
+        console.log('Пользователь:', process.env.DB_USER);
+        console.log('База:', process.env.DB_NAME);
+        console.log('\nОшибка:', err.message);
+    });
 
-module.exports = db;
+module.exports = promisePool;
